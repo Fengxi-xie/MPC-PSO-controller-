@@ -3,13 +3,25 @@ clc;
 clear all;
 
 %%      ------------------模型参数---------------------------%%
+%采样时间设置
+model.T = 0.1;%采样时间
+model.Np = 5;% 预测步长
+model.Nc = 80;% 控制步长
+
 %优化算法参数
-model.nVar = 2*30; %编码长度
-model.A = 1;
-model.B = 1;
-model.C = 2;
+model.nVar = 2*model.Nc; %编码长度
+model.A = 3;%曲线参数
+model.B = 3;
+model.C = 6;
+%重要参数
+model.v_ref = 5;%期望速度
+model.l = 2.8;%轴距
+
+%初始位置
+model.location = [0 ; -3; deg2rad(180)];
+
 %%  算法参数设置
-param.MaxIt = 50;%迭代次数
+param.MaxIt = 2;%迭代次数
 param.nPop = 2;%种群数目
 param.w = 1;%权重
 param.wdamp = 0.99;%退化率
@@ -31,18 +43,17 @@ CostFunction= @(x) MyCost(x,model);%设置目标函数
 psi_ref = 0;%初始转向角 车身横摆角
 delta_ref = 0;%初始前轮偏转角
 R = 100;%圆半径
-v_ref = R/8;%期望速度
-l = 2.784;%轴距
+
 
 %%  --------控制参数-------%%
-T = 0.1;%采样时间
-Np=5;% 预测步长
-Nc=30;% 控制步长
+T = model.T;%采样时间
+Np=model.Np;% 预测步长
+Nc=model.Nc;% 控制步长
 
 %%  --------矩阵定义-------%%
 %状态空间方程x(k+1) = Ak*x(k)+Bk*u;
-Ak = [1 0 -v_ref*sin(psi_ref)*T; 0 1 v_ref*cos(psi_ref)*T;0 0 1];
-Bk = [cos(psi_ref)*T 0; sin(psi_ref)*T 0; tan(delta_ref)*T/l v_ref*T/(l*cos(delta_ref))];
+Ak = [1 0 -model.v_ref*sin(psi_ref)*T; 0 1 model.v_ref*cos(psi_ref)*T;0 0 1];
+Bk = [cos(psi_ref)*T 0; sin(psi_ref)*T 0; tan(delta_ref)*T/model.l model.v_ref*T/(model.l*cos(delta_ref))];
 
 % 优化目标参数，加权矩阵
 Q=eye(3); R=eye(2);
@@ -75,7 +86,7 @@ ub = pi/2*ones(Np,1);
 u0=zeros(Np,1);
 
 % 误差量的的初始值
-x0=[0; -10; 0];
+x0=model.location;
 
 % 转换后的优化目标函数矩阵，循环优化函数中H后的表达式为优化目标的另一项
 H=2*(Bt'*Qt*Bt + Rt);
@@ -108,30 +119,30 @@ for k=1:Nc
 end
 
 %因为建立的是误差系统，为了得到真实状态量，需要计算 真实状态量 = 误差量 + 期望状态量
-t = 0:T:Nc*T;
-X_ref = v_ref/T*t*0.8;
-Y_ref = v_ref/T*(model.A*sin(1*t)+model.B*sin(2*t)+model.C*sin(3*t))/8;
+t = 0:T:model.Nc*T;
+X_ref = model.v_ref*t*0.8;
+Y_ref = model.v_ref*(model.A*sin(1*t)+model.B*sin(2*t)+model.C*sin(3*t))/8;
 psi_ref = [0 atan2(diff(Y_ref), diff(X_ref))];
 r_ref = [0 diff(psi_ref)];
 X = x(1,:) + X_ref;
 
 Y = x(2,:) + Y_ref;
 psi = x(3,:) + psi_ref;
-v = u1 + v_ref;
+v = u1 + model.v_ref;
 delta = u2 + delta_ref;
-
+error = sqrt((X_ref-X).^2+(Y_ref-Y).^2);
 %%      ------------------画图---------------------------%%
 figure(1);
 plot(X,Y,'linewidth',1.5);
 hold on;
 plot(X,Y_ref,'linewidth',1.5);
+ylim([-15 25]);
 xlabel('X/m');
 ylabel('Y/m');
-axis equal;
-legend('Real path','reference path');
+legend('真实路径','期望路径');
 
 figure(2)
 plot(rad2deg(delta),'linewidth',1.5);
-xlabel('Time/s');
-ylabel('Steering angle/(°)');
-legend('Front steering angle');
+xlabel('时间/s');
+ylabel('转向角/(°)');
+legend('转角');

@@ -6,18 +6,16 @@ Position = reshape(Position, [], 2);
 psi_ref = 0;%初始转向角 车身横摆角
 delta_ref = 0;%初始前轮偏转角
 R = 100;%圆半径
-v_ref = R/10;%期望速度
-l = 2.784;%轴距
 
 %%  --------控制参数-------%%
-T = 0.1;%采样时间
-Np=5;% 预测步长
-Nc=30;% 控制步长
+T = model.T;%采样时间
+Np=model.Np;% 预测步长
+Nc=model.Nc;% 控制步长
 
 %%  --------矩阵定义-------%%
 %状态空间方程x(k+1) = Ak*x(k)+Bk*u;
-Ak = [1 0 -v_ref*sin(psi_ref)*T; 0 1 v_ref*cos(psi_ref)*T;0 0 1];
-Bk = [cos(psi_ref)*T 0; sin(psi_ref)*T 0; tan(delta_ref)*T/l v_ref*T/(l*cos(delta_ref))];
+Ak = [1 0 -model.v_ref*sin(psi_ref)*T; 0 1 model.v_ref*cos(psi_ref)*T;0 0 1];
+Bk = [cos(psi_ref)*T 0; sin(psi_ref)*T 0; tan(delta_ref)*T/model.l model.v_ref*T/(model.l*cos(delta_ref))];
 
 % 优化目标参数，加权矩阵
 Q=eye(3); R=eye(2);
@@ -50,7 +48,7 @@ ub = pi/2*ones(Np,1);
 u0=zeros(Np,1);
 
 % 误差量的的初始值
-x0=[0; -5; 0];
+x0=model.location;
 
 % 转换后的优化目标函数矩阵，循环优化函数中H后的表达式为优化目标的另一项
 H=2*(Bt'*Qt*Bt + Rt);
