@@ -4,9 +4,9 @@ clear all;
 
 %%      ------------------模型参数---------------------------%%
 %采样时间设置
-model.T = 0.1;%采样时间
-model.Np = 5;% 预测步长
-model.Nc = 80;% 控制步长
+model.T = 0.1;
+model.Np = 5;
+model.Nc = 80;
 
 %优化算法参数
 model.nVar = 2*model.Nc; %编码长度
@@ -15,10 +15,10 @@ model.B = 3;
 model.C = 6;
 %重要参数
 model.v_ref = 5;%期望速度
-model.l = 0.5;%轴距
+model.l = 2.7;%轴距
 
 %初始位置
-model.location = [0 ; -3; deg2rad(180)];
+model.location = [0 ; -3; deg2rad(60)];
 
 %%  算法参数设置
 param.MaxIt = 2;%迭代次数

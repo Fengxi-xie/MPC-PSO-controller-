@@ -77,7 +77,7 @@ for k=1:Nc
     x(:, k+1) = Ak*x(:, k) + Bk*[u1(k) u2(k)]';
     xk = x(:, k+1);
     % 对优化初始值进行修改，采用预测值的后段作为下一步的初始值
-    u0 = [ut(2:Np); ut(Np)];
+    u0 = [ut(2:model.Np); ut(model.Np)];
 end
 
 cost = sum(sqrt((x(1,:)).^2+(x(2,:)).^2));
